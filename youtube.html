@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Ultimate YouTube Clone</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* [기본 스타일 및 변수] */
+        :root {
+            --bg-color: #fff0f3; --card-bg: #ffffff; --text-main: #1a1a1a;
+            --text-sub: #606060; --header-bg: rgba(255, 255, 255, 0.9);
+            --accent: #ff4d6d; --shadow: rgba(0, 0, 0, 0.1);
+        }
+
+        body.dark-mode {
+            --bg-color: #0f0f0f; --card-bg: #212121; --text-main: #ffffff;
+            --text-sub: #aaa; --header-bg: rgba(15, 15, 15, 0.9);
+            --shadow: rgba(0, 0, 0, 0.5);
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: var(--bg-color); color: var(--text-main);
+            margin: 0; transition: background 0.3s;
+        }
+
+        /* [상단 헤더 - 스티키 효과] */
+        header {
+            position: sticky; top: 0; z-index: 100;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 24px; background-color: var(--header-bg);
+            backdrop-filter: blur(10px); box-shadow: 0 1px 5px var(--shadow);
+        }
+
+        .search-bar { display: flex; flex: 0 1 600px; margin: 0 20px; }
+        .search-bar input {
+            flex: 1; padding: 10px 15px; border: 1px solid #ccc;
+            border-radius: 40px 0 0 40px; outline: none;
+            background: var(--card-bg); color: var(--text-main);
+        }
+        .search-bar button {
+            padding: 0 20px; border: 1px solid #ccc; border-left: none;
+            border-radius: 0 40px 40px 0; cursor: pointer; background: #f8f8f8;
+        }
+
+        /* [토글 & 버튼] */
+        .nav-right { display: flex; align-items: center; gap: 20px; }
+        .theme-toggle { cursor: pointer; font-size: 24px; user-select: none; }
+        .login-btn {
+            background: #219ebc; color: white; border: none;
+            padding: 8px 18px; border-radius: 20px; font-weight: bold; cursor: pointer;
+        }
+
+        /* [메인 콘텐츠 - 그리드 레이아웃] */
+        main { padding: 30px; }
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .video-card {
+            background: var(--card-bg); border-radius: 12px;
+            overflow: hidden; cursor: pointer; transition: 0.25s ease;
+            box-shadow: 0 4px 10px var(--shadow);
+        }
+        .video-card:hover { transform: translateY(-8px); }
+        .video-card .thumb {
+            width: 100%; aspect-ratio: 16/9; background: #ddd;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; color: #999;
+        }
+        .video-info { padding: 12px; }
+        .video-info h3 { margin: 0 0 8px; font-size: 16px; line-height: 1.4; }
+        .video-info p { margin: 0; font-size: 13px; color: var(--text-sub); }
+
+        /* 검색 강조 효과 */
+        .highlight { color: var(--accent); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo"><h2 style="color: var(--accent); margin:0;">YouTube</h2></div>
+        
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="검색어를 입력하세요...">
+            <button id="searchBtn">🔍</button>
+        </div>
+
+        <div class="nav-right">
+            <div class="theme-toggle" id="themeBtn">🌓</div>
+            <button class="login-btn" onclick="alert('로그인 창으로 이동합니다!')">로그인</button>
+        </div>
+    </header>
+
+    <main>
+        <div class="video-grid" id="videoGrid">
+            </div>
+    </main>
+
+    <script>
+        // 1. 동영상 데이터 (실제로는 서버에서 가져옴)
+        const videoData = [
+            { id: 1, title: "HTML/CSS 마스터하는 방법", author: "코딩천재", views: "12만회", date: "2일 전", color: "#ffccd5" },
+            { id: 2, title: "JavaScript로 인터랙티브 웹 만들기", author: "JS장인", views: "5만회", date: "5시간 전", color: "#8ecae6" },
+            { id: 3, title: "벚꽃 아래서 듣기 좋은 플레이리스트", author: "Music 24", views: "88만회", date: "1주일 전", color: "#ffb3c1" },
+            { id: 4, title: "다크모드 디자인의 정석", author: "UI박사", views: "3.4만회", date: "12시간 전", color: "#219ebc" },
+            { id: 5, title: "2026년 프론트엔드 트렌드", author: "Tech News", views: "20만회", date: "1달 전", color: "#fb8500" },
+            { id: 6, title: "나만 알고 싶은 숨은 명소 TOP 5", author: "여행가이드", views: "15만회", date: "3일 전", color: "#8338ec" }
+        ];
+
+        const videoGrid = document.getElementById('videoGrid');
+        const searchInput = document.getElementById('searchInput');
+
+        // 2. 동영상 렌더링 함수
+        function renderVideos(filter = "") {
+            videoGrid.innerHTML = ""; // 초기화
+            
+            const filtered = videoData.filter(v => v.title.includes(filter));
+
+            filtered.forEach(video => {
+                const card = document.createElement('div');
+                card.className = 'video-card';
+                card.innerHTML = `
+                    <div class="thumb" style="background-color: ${video.color}">Thumbnail</div>
+                    <div class="video-info">
+                        <h3>${video.title}</h3>
+                        <p>${video.author}</p>
+                        <p>조회수 ${video.views} • ${video.date}</p>
+                    </div>
+                `;
+                // 클릭 이벤트 추가
+                card.onclick = () => alert(`'${video.title}' 영상을 재생합니다!`);
+                videoGrid.appendChild(card);
+            });
+        }
+
+        // 3. 다크모드 토글 로직
+        const themeBtn = document.getElementById('themeBtn');
+        themeBtn.onclick = () => {
+            document.body.classList.toggle('dark-mode');
+            themeBtn.innerText = document.body.classList.contains('dark-mode') ? "☀️" : "🌓";
+        };
+
+        // 4. 검색 기능 (실시간 검색)
+        searchInput.oninput = (e) => {
+            renderVideos(e.target.value);
+        };
+
+        // 초기 실행
+        renderVideos();
+    </script>
+</body>
+</html>

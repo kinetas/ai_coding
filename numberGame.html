@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Up & Down Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --bg-body: #f8f9fa;
+            --bg-card: #ffffff;
+            --text-main: #333333;
+            --primary: #ff4d6d;
+            --shadow: rgba(0, 0, 0, 0.1);
+        }
+
+        /* [디자인 변경] 다크모드 설정 */
+        body.dark-mode {
+            --bg-body: #121212;
+            --bg-card: #1e1e1e;
+            --text-main: #e0e0e0;
+            --primary: #ff758f;
+            --shadow: rgba(0, 0, 0, 0.5);
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; margin: 0; transition: all 0.3s ease;
+        }
+
+        .game-container {
+            background: var(--bg-card);
+            padding: 2.5rem; border-radius: 20px;
+            box-shadow: 0 10px 30px var(--shadow);
+            text-align: center; width: 380px; position: relative;
+        }
+
+        /* 모드 토글 버튼 */
+        .mode-toggle {
+            position: absolute; top: 15px; right: 15px;
+            cursor: pointer; font-size: 1.2rem; background: none; border: none;
+        }
+
+        h1 { color: var(--primary); margin-top: 0; }
+        .chance-badge {
+            background: var(--primary); color: white;
+            padding: 5px 15px; border-radius: 20px; font-weight: bold;
+        }
+
+        .input-area { margin: 25px 0; }
+        input[type="number"] {
+            width: 100px; padding: 12px; font-size: 1.5rem;
+            border: 2px solid #ddd; border-radius: 10px;
+            background: var(--bg-card); color: var(--text-main);
+            text-align: center; outline: none;
+        }
+
+        button.main-btn {
+            padding: 12px 25px; font-size: 1.1rem; font-weight: bold;
+            background-color: var(--primary); color: white;
+            border: none; border-radius: 10px; cursor: pointer;
+            transition: transform 0.2s; margin-left: 10px;
+        }
+
+        button.main-btn:hover { transform: scale(1.05); opacity: 0.9; }
+        button:disabled { background-color: #888 !important; cursor: not-allowed; }
+
+        #result-msg { margin-top: 20px; font-size: 1.2rem; font-weight: bold; min-height: 1.6rem; }
+        
+        .reset-btn {
+            margin-top: 20px; padding: 10px 20px;
+            background-color: var(--text-main); color: var(--bg-card);
+            border: none; border-radius: 8px; cursor: pointer; display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <button class="mode-toggle" id="modeBtn">🌓</button>
+        <h1>Up & Down Pro</h1>
+        <p>숫자 범위: <strong>1 ~ 300</strong></p>
+        <p>남은 기회: <span id="chance-count" class="chance-badge">10</span></p>
+        
+        <div class="input-area">
+            <input type="number" id="user-input" min="1" max="300" placeholder="?">
+            <button id="check-btn" class="main-btn">확인</button>
+        </div>
+
+        <div id="result-msg">행운을 빌어요!</div>
+        <button id="reset-btn" class="reset-btn">다시 시작하기</button>
+    </div>
+
+    <script>
+        // 1. 상태 변수 설정
+        let randomNumber;
+        let chances = 10;
+        const MAX_CHANCES = 10;
+        const RANGE_MAX = 300;
+
+        const body = document.body;
+        const userInput = document.getElementById('user-input');
+        const checkBtn = document.getElementById('check-btn');
+        const resultMsg = document.getElementById('result-msg');
+        const resetBtn = document.getElementById('reset-btn');
+        const chanceDisplay = document.getElementById('chance-count');
+        const modeBtn = document.getElementById('modeBtn');
+
+        // 2. 게임 초기화 (난이도 변경: 1~300)
+        function initGame() {
+            randomNumber = Math.floor(Math.random() * RANGE_MAX) + 1;
+            chances = MAX_CHANCES;
+            chanceDisplay.innerText = chances;
+            resultMsg.innerText = "행운을 빌어요!";
+            resultMsg.style.color = "inherit";
+            userInput.value = "";
+            userInput.disabled = false;
+            checkBtn.disabled = false;
+            resetBtn.style.display = "none";
+            console.log("정답: " + randomNumber);
+        }
+
+        // 3. 확인 버튼 클릭 로직
+        checkBtn.addEventListener('click', () => {
+            const guess = parseInt(userInput.value);
+
+            if (isNaN(guess) || guess < 1 || guess > RANGE_MAX) {
+                resultMsg.innerText = `1~${RANGE_MAX} 사이를 입력하세요!`;
+                return;
+            }
+
+            chances--;
+            chanceDisplay.innerText = chances;
+
+            if (guess === randomNumber) {
+                // [기능추가] 정답 시 폭죽 효과
+                confetti({
+                    particleCount: 150,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+                resultMsg.innerText = "🎉 축하합니다! 정답입니다!";
+                gameOver(true);
+            } else if (chances <= 0) {
+                resultMsg.innerText = `👻 실패! 정답은 ${randomNumber}였습니다.`;
+                gameOver(false);
+            } else {
+                resultMsg.innerText = guess < randomNumber ? "UP ⬆️" : "DOWN ⬇️";
+                resultMsg.style.color = guess < randomNumber ? "#ff4d6d" : "#219ebc";
+            }
+            
+            userInput.value = "";
+            userInput.focus();
+        });
+
+        function gameOver(isWin) {
+            userInput.disabled = true;
+            checkBtn.disabled = true;
+            resetBtn.style.display = "inline-block";
+        }
+
+        // [디자인 변경] 다크모드/화이트모드 토글
+        modeBtn.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            modeBtn.innerText = body.classList.contains('dark-mode') ? "☀️" : "🌓";
+        });
+
+        resetBtn.addEventListener('click', initGame);
+        
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkBtn.click();
+        });
+
+        initGame();
+    </script>
+</body>
+</html>
