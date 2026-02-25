@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>김정희 포트폴리오</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- 편집모드 토글 -->
+    <div class="edit-mode-bar">
+        <button id="editModeToggle" class="edit-btn">편집모드</button>
+        <span class="edit-status">편집 불가</span>
+    </div>
+
+    <!-- 네비게이션 -->
+    <nav class="main-nav">
+        <a href="#" class="nav-link active" data-page="main">프로필</a>
+        <a href="#" class="nav-link" data-page="career">경력</a>
+        <a href="#" class="nav-link" data-page="skills">역량</a>
+        <a href="#" class="nav-link" data-page="portfolio">포트폴리오</a>
+    </nav>
+
+    <main class="app-main">
+        <!-- 메인화면 (프로필) -->
+        <section class="page active" id="page-main" data-page="main">
+            <div class="profile-hero">
+                <h1 class="profile-name">김정희 <span class="eng-name">Kim Jeong Hee</span></h1>
+                <div class="profile-info">
+                    <div class="profile-photo-wrap">
+                        <img src="" alt="프로필 사진" class="profile-photo" id="profilePhoto">
+                        <span class="photo-placeholder">프로필 사진</span>
+                    </div>
+                    <div class="profile-details">
+                        <p class="info-row"><strong>생년월일:</strong> <span id="birthdate"><!-- 직접 입력 --></span></p>
+                        <p class="info-row"><strong>전화번호:</strong> <span id="phone"><!-- 직접 입력 --></span></p>
+                    </div>
+                </div>
+                <div class="intro-section">
+                    <h3>자기소개</h3>
+                    <p class="intro-text" id="introText"><!-- 직접 입력 --></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 경력 페이지 -->
+        <section class="page" id="page-career" data-page="career">
+            <div class="page-header">
+                <h2>경력사항</h2>
+                <div class="career-section">
+                    <h3>학력</h3>
+                    <div class="education-list" id="educationList">
+                        <p><!-- 예: OO대학교 OO학과 졸업 (20XX년) --></p>
+                    </div>
+                </div>
+                <h3>논문</h3>
+            </div>
+            <div class="canvas-area dynamic-area" data-page-id="career" id="canvas-career">
+                <!-- 우클릭 위치에 콘텐츠 생성, 드래그로 이동 -->
+            </div>
+        </section>
+
+        <!-- 역량 페이지 -->
+        <section class="page" id="page-skills" data-page="skills">
+            <div class="page-header">
+                <h2>역량</h2>
+            </div>
+            <div class="canvas-area dynamic-area" data-page-id="skills" id="canvas-skills">
+                <!-- 우클릭 위치에 콘텐츠 생성, 드래그로 구역 나누기 -->
+            </div>
+        </section>
+
+        <!-- 포트폴리오 페이지 -->
+        <section class="page" id="page-portfolio" data-page="portfolio">
+            <div class="page-header">
+                <h2>포트폴리오</h2>
+                <h3>참여 프로젝트</h3>
+            </div>
+            <div class="canvas-area dynamic-area" data-page-id="portfolio" id="canvas-portfolio">
+                <!-- 우클릭 위치에 콘텐츠 생성 -->
+            </div>
+        </section>
+    </main>
+
+    <!-- 우클릭 툴박스 -->
+    <div id="contextToolbox" class="toolbox hidden"></div>
+
+    <!-- 검색 모달 -->
+    <div id="searchModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>검색</h3>
+            <input type="text" id="searchInput" placeholder="검색할 내용 입력...">
+            <button id="searchExecute" class="modal-btn">검색</button>
+            <div id="searchResults" class="search-results"></div>
+            <button id="searchClose" class="modal-btn secondary">닫기</button>
+        </div>
+    </div>
+
+    <!-- 컨텐츠 박스 추가 모달 -->
+    <div id="contentBoxModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>컨텐츠 박스 추가</h3>
+            <input type="text" id="contentBoxText" placeholder="내용 입력...">
+            <input type="text" id="contentBoxTags" placeholder="태그 (쉼표로 구분)">
+            <label>이미지 URL (선택): <input type="text" id="contentBoxImage" placeholder="이미지 URL"></label>
+            <button id="contentBoxAdd" class="modal-btn">추가</button>
+            <button id="contentBoxCancel" class="modal-btn secondary">취소</button>
+        </div>
+    </div>
+
+    <!-- 표 추가 모달 -->
+    <div id="tableModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>표 추가</h3>
+            <label>행: <input type="number" id="tableRows" value="3" min="1" max="10"></label>
+            <label>열: <input type="number" id="tableCols" value="3" min="1" max="6"></label>
+            <button id="tableAdd" class="modal-btn">추가</button>
+            <button id="tableCancel" class="modal-btn secondary">취소</button>
+        </div>
+    </div>
+
+    <!-- 이미지 추가 모달 -->
+    <div id="imageModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>이미지 추가</h3>
+            <label>이미지 URL: <input type="text" id="imageUrl" placeholder="https://..."></label>
+            <p class="modal-divider">또는</p>
+            <label class="file-label">
+                <span class="file-btn">파일 선택</span>
+                <input type="file" id="imageFile" accept="image/*" style="display:none">
+            </label>
+            <span id="imageFileName" class="file-name"></span>
+            <button id="imageAdd" class="modal-btn">추가</button>
+            <button id="imageCancel" class="modal-btn secondary">취소</button>
+        </div>
+    </div>
+
+    <!-- 동적 항목 추가 모달 -->
+    <div id="dynamicItemModal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="dynamicItemTitle">항목 추가</h3>
+            <div id="dynamicItemFields"></div>
+            <button id="dynamicItemAdd" class="modal-btn">추가</button>
+            <button id="dynamicItemCancel" class="modal-btn secondary">취소</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
