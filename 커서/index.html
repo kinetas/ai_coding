@@ -10,43 +10,58 @@
     <!-- 편집모드 토글 -->
     <div class="edit-mode-bar">
         <button id="editModeToggle" class="edit-btn">편집모드</button>
+        <button id="exportPublishBtn" class="edit-btn" type="button">배포 파일 생성</button>
         <span class="edit-status">편집 불가</span>
     </div>
 
     <!-- 네비게이션 -->
-    <nav class="main-nav">
-        <a href="#" class="nav-link active" data-page="main">프로필</a>
-        <a href="#" class="nav-link" data-page="career">경력</a>
-        <a href="#" class="nav-link" data-page="skills">역량</a>
-        <a href="#" class="nav-link" data-page="portfolio">포트폴리오</a>
+    <nav class="main-nav" aria-label="섹션 이동">
+        <div class="nav-inner">
+            <a class="nav-brand" href="#about">Web Portfolio</a>
+            <div class="nav-links">
+                <a href="#about" class="nav-link active">ABOUT ME</a>
+                <a href="#work" class="nav-link">WORK</a>
+                <a href="#skills" class="nav-link">SKILLS</a>
+                <a href="#project" class="nav-link">PROJECT</a>
+                <a href="#github" class="nav-link">GITHUB</a>
+                <a href="#contact" class="nav-link">CONTACT</a>
+            </div>
+        </div>
     </nav>
 
     <main class="app-main">
-        <!-- 메인화면 (프로필) -->
-        <section class="page active" id="page-main" data-page="main">
-            <div class="profile-hero">
-                <h1 class="profile-name">김정희 <span class="eng-name">Kim Jeong Hee</span></h1>
-                <div class="profile-info">
-                    <div class="profile-photo-wrap">
-                        <img src="" alt="프로필 사진" class="profile-photo" id="profilePhoto">
-                        <span class="photo-placeholder">프로필 사진</span>
-                    </div>
-                    <div class="profile-details">
-                        <p class="info-row"><strong>생년월일:</strong> <span id="birthdate"><!-- 직접 입력 --></span></p>
-                        <p class="info-row"><strong>전화번호:</strong> <span id="phone"><!-- 직접 입력 --></span></p>
-                    </div>
+        <!-- ABOUT -->
+        <section class="page section" id="about">
+            <div class="hero">
+                <div class="hero-copy">
+                    <p class="hero-kicker">ABOUT ME</p>
+                    <h1 class="hero-title">김정희 <span class="hero-title-sub">PORTFOLIO</span></h1>
+                    <p class="hero-lede">
+                        안녕하세요, 저는 (직업) 김정희입니다. 문제를 구조화하고, 작은 개선을 빠르게 반복하는 방식으로 결과물을 만듭니다.
+                    </p>
                 </div>
-                <div class="intro-section">
-                    <h3>자기소개</h3>
-                    <p class="intro-text" id="introText"><!-- 직접 입력 --></p>
+                <div class="profile-hero">
+                    <div class="profile-info">
+                        <div class="profile-photo-wrap">
+                            <img src="" alt="프로필 사진" class="profile-photo" id="profilePhoto">
+                            <span class="photo-placeholder">프로필 사진</span>
+                        </div>
+                        <div class="profile-details">
+                            <p class="info-row"><strong>생년월일</strong> <span id="birthdate"><!-- 직접 입력 --></span></p>
+                            <p class="info-row"><strong>전화번호</strong> <span id="phone"><!-- 직접 입력 --></span></p>
+                        </div>
+                    </div>
+                    <div class="intro-section">
+                        <p class="intro-text" id="introText"><!-- 직접 입력 --></p>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- 경력 페이지 -->
-        <section class="page" id="page-career" data-page="career">
+        <!-- WORK -->
+        <section class="page section" id="work">
             <div class="page-header">
-                <h2>경력사항</h2>
+                <h2>WORK</h2>
                 <div class="career-section">
                     <h3>학력</h3>
                     <div class="education-list" id="educationList">
@@ -60,24 +75,100 @@
             </div>
         </section>
 
-        <!-- 역량 페이지 -->
-        <section class="page" id="page-skills" data-page="skills">
+        <!-- SKILLS -->
+        <section class="page section" id="skills">
             <div class="page-header">
-                <h2>역량</h2>
+                <h2>SKILLS</h2>
             </div>
             <div class="canvas-area dynamic-area" data-page-id="skills" id="canvas-skills">
                 <!-- 우클릭 위치에 콘텐츠 생성, 드래그로 구역 나누기 -->
             </div>
         </section>
 
-        <!-- 포트폴리오 페이지 -->
-        <section class="page" id="page-portfolio" data-page="portfolio">
+        <!-- PROJECT -->
+        <section class="page section" id="project">
             <div class="page-header">
-                <h2>포트폴리오</h2>
+                <h2>PROJECT</h2>
                 <h3>참여 프로젝트</h3>
             </div>
             <div class="canvas-area dynamic-area" data-page-id="portfolio" id="canvas-portfolio">
                 <!-- 우클릭 위치에 콘텐츠 생성 -->
+            </div>
+        </section>
+
+        <!-- GITHUB -->
+        <section class="page section" id="github">
+            <div class="page-header">
+                <h2>GITHUB</h2>
+                <p class="page-subtitle">GitHub API로 프로필/레포지토리/최근 활동을 불러와 자동으로 최신화합니다.</p>
+
+                <div class="github-controls">
+                    <div class="github-fixed-user">
+                        <span class="github-fixed-label">GitHub 아이디</span>
+                        <span class="github-fixed-value">kinetas</span>
+                        <input type="hidden" id="githubUsername" value="kinetas">
+                    </div>
+                    <div class="github-actions">
+                        <button id="githubRefreshBtn" class="modal-btn secondary" type="button">새로고침</button>
+                    </div>
+                    <div id="githubStatus" class="github-status" aria-live="polite"></div>
+                </div>
+            </div>
+
+            <div class="github-grid">
+                <section class="github-card" aria-label="GitHub 프로필">
+                    <div class="github-card-header">
+                        <h3>프로필</h3>
+                        <a id="githubProfileLink" class="github-link" href="#" target="_blank" rel="noreferrer">GitHub에서 보기</a>
+                    </div>
+                    <div id="githubProfileBody" class="github-card-body">
+                        <p class="github-placeholder">GitHub 아이디를 입력하고 “불러오기”를 눌러주세요.</p>
+                    </div>
+                </section>
+
+                <section class="github-card" aria-label="레포지토리">
+                    <div class="github-card-header">
+                        <h3>최근 업데이트 레포</h3>
+                        <span id="githubRepoMeta" class="github-meta"></span>
+                    </div>
+                    <div id="githubReposBody" class="github-card-body"></div>
+                </section>
+
+                <section class="github-card" aria-label="최근 활동">
+                    <div class="github-card-header">
+                        <h3>최근 활동</h3>
+                        <span id="githubActivityMeta" class="github-meta"></span>
+                    </div>
+                    <div id="githubActivityBody" class="github-card-body"></div>
+                </section>
+            </div>
+        </section>
+
+        <!-- CONTACT -->
+        <section class="page section" id="contact">
+            <div class="page-header">
+                <h2>CONTACT</h2>
+                <p class="page-subtitle">협업/채용/프로젝트 문의는 아래로 연락 주세요.</p>
+            </div>
+            <div class="canvas-area contact-card" id="contactCard">
+                <div class="contact-grid">
+                    <div class="contact-item">
+                        <div class="contact-label">Email</div>
+                        <div class="contact-value"><a class="contact-link" href="mailto:your@email.com">your@email.com</a></div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-label">GitHub</div>
+                        <div class="contact-value"><a class="contact-link" href="https://github.com/kinetas" target="_blank" rel="noreferrer">github.com/kinetas</a></div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-label">Phone</div>
+                        <div class="contact-value"><span class="contact-mono">010-0000-0000</span></div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-label">Location</div>
+                        <div class="contact-value">Seoul, KR</div>
+                    </div>
+                </div>
             </div>
         </section>
     </main>
@@ -145,6 +236,7 @@
         </div>
     </div>
 
+    <script src="published_data.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

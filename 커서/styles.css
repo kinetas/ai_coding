@@ -6,19 +6,26 @@
 }
 
 :root {
-    --primary: #0ea5e9;
-    --accent: #22d3ee;
-    --accent-hover: #38bdf8;
-    --bg: #0f172a;
-    --bg-card: #1e293b;
-    --bg-elevated: #334155;
-    --text: #f1f5f9;
-    --text-muted: #94a3b8;
-    --edit-bar: #0c4a6e;
-    --border: #334155;
-    --postit-cyan: #0e7490;
-    --postit-teal: #0f766e;
-    --postit-slate: #475569;
+    --editbar-h: 40px;
+    --nav-h: 64px;
+    --header-h: calc(var(--editbar-h) + var(--nav-h));
+
+    --primary: #1d4ed8;
+    --accent: #0ea5e9;
+    --accent-hover: #0284c7;
+    --bg: #f8fafc;
+    --bg-card: #ffffff;
+    --bg-elevated: #f1f5f9;
+    --text: #0f172a;
+    --text-muted: #475569;
+    --edit-bar: rgba(255, 255, 255, 0.85);
+    --border: rgba(15, 23, 42, 0.12);
+    --shadow: 0 10px 30px rgba(2, 6, 23, 0.08);
+    --shadow-soft: 0 4px 14px rgba(2, 6, 23, 0.08);
+
+    --postit-cyan: #e0f2fe;
+    --postit-teal: #ecfeff;
+    --postit-slate: #eef2ff;
 }
 
 body {
@@ -34,12 +41,18 @@ body::before {
     content: '';
     position: fixed;
     inset: 0;
-    background-image:
-        linear-gradient(rgba(14, 165, 233, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(14, 165, 233, 0.03) 1px, transparent 1px);
-    background-size: 24px 24px;
+    background-image: radial-gradient(900px 500px at 25% 20%, rgba(14, 165, 233, 0.14), transparent 60%),
+        radial-gradient(700px 420px at 70% 30%, rgba(29, 78, 216, 0.10), transparent 65%),
+        radial-gradient(900px 520px at 50% 80%, rgba(2, 132, 199, 0.08), transparent 70%),
+        linear-gradient(rgba(2, 6, 23, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(2, 6, 23, 0.03) 1px, transparent 1px);
+    background-size: auto, auto, auto, 28px 28px, 28px 28px;
     pointer-events: none;
     z-index: 0;
+}
+
+html {
+    scroll-behavior: smooth;
 }
 
 /* ===== 편집모드 바 ===== */
@@ -48,29 +61,30 @@ body::before {
     top: 0;
     left: 0;
     right: 0;
-    height: 40px;
+    height: var(--editbar-h);
     background: var(--edit-bar);
-    color: var(--accent);
+    color: var(--text);
     display: flex;
     align-items: center;
     padding: 0 20px;
     gap: 12px;
     z-index: 1000;
-    border-bottom: 1px solid rgba(34, 211, 238, 0.2);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(10px);
 }
 
 .edit-btn {
     padding: 6px 16px;
-    background: transparent;
-    border: 1px solid var(--accent);
-    color: var(--accent);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text);
     border-radius: 6px;
     cursor: pointer;
     font-size: 13px;
     font-family: inherit;
 }
 
-.edit-btn:hover { background: rgba(34, 211, 238, 0.15); }
+.edit-btn:hover { background: var(--bg-elevated); }
 .edit-btn.active {
     background: #dc2626;
     border-color: #dc2626;
@@ -81,71 +95,289 @@ body::before {
 /* ===== 네비게이션 ===== */
 .main-nav {
     position: fixed;
-    top: 40px;
+    top: var(--editbar-h);
     left: 0;
     right: 0;
-    height: 52px;
-    background: var(--bg-card);
+    height: var(--nav-h);
+    background: rgba(248, 250, 252, 0.78);
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
     z-index: 999;
+    backdrop-filter: blur(10px);
+}
+
+.nav-inner {
+    width: min(1120px, calc(100% - 48px));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.nav-brand {
+    text-decoration: none;
+    color: var(--text);
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    font-size: 14px;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
 .nav-link {
-    padding: 12px 20px;
+    padding: 10px 12px;
     text-decoration: none;
     color: var(--text-muted);
     font-weight: 500;
     font-size: 14px;
-    border-radius: 6px;
+    border-radius: 999px;
     transition: all 0.2s;
 }
 
 .nav-link:hover {
     background: var(--bg-elevated);
-    color: var(--accent);
+    color: var(--text);
 }
 
 .nav-link.active {
-    background: rgba(14, 165, 233, 0.15);
-    color: var(--accent);
-    border: 1px solid rgba(14, 165, 233, 0.3);
+    background: rgba(29, 78, 216, 0.10);
+    color: var(--text);
+    border: 1px solid rgba(29, 78, 216, 0.22);
 }
 
 /* ===== 메인 영역 ===== */
 .app-main {
-    padding-top: 112px;
+    padding-top: calc(var(--header-h) + 24px);
     min-height: 100vh;
     position: relative;
     z-index: 1;
 }
 
 .page {
-    display: none;
-    padding: 40px 24px 80px;
-    max-width: 1000px;
-    margin: 0 auto;
-}
-
-.page.active {
     display: block;
-    animation: fadeIn 0.3s ease;
+    padding: 56px 24px;
+    max-width: 1120px;
+    margin: 0 auto;
+    scroll-margin-top: calc(var(--header-h) + 18px);
+    min-height: calc(100vh - var(--header-h));
+    position: relative;
+    isolation: isolate;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+/* 섹션별 백드롭(전체 폭 배경) */
+.page::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: -28px;
+    bottom: -28px;
+    width: 100vw;
+    transform: translateX(-50%);
+    z-index: -1;
+    background: var(--section-backdrop, transparent);
+    background-size: var(--section-backdrop-size, auto);
+    background-position: var(--section-backdrop-position, 0 0);
+    border-top: 1px solid rgba(15, 23, 42, 0.06);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+/* 기본은 “화이트+그리드” 계열로 깔끔하게 */
+#about.page {
+    --section-backdrop:
+        radial-gradient(1100px 560px at 18% 18%, rgba(14, 165, 233, 0.16), transparent 62%),
+        radial-gradient(900px 520px at 70% 30%, rgba(29, 78, 216, 0.10), transparent 64%),
+        linear-gradient(#f8fafc, #f8fafc);
+}
+
+#work.page {
+    /* 데이터 엔지니어 느낌: 다크 + 그리드 + 은은한 사이안 글로우 */
+    --section-backdrop:
+        radial-gradient(1000px 520px at 18% 18%, rgba(34, 211, 238, 0.12), transparent 60%),
+        radial-gradient(760px 460px at 72% 26%, rgba(14, 165, 233, 0.10), transparent 64%),
+        linear-gradient(#0f172a, #0f172a),
+        linear-gradient(rgba(34, 211, 238, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 211, 238, 0.06) 1px, transparent 1px);
+    --section-backdrop-size: auto, auto, auto, 28px 28px, 28px 28px;
+}
+
+#skills.page {
+    --section-backdrop:
+        radial-gradient(900px 520px at 22% 22%, rgba(2, 132, 199, 0.10), transparent 65%),
+        linear-gradient(#f8fafc, #f8fafc);
+}
+
+/* 예시처럼 “살짝 다른 무드”를 주는 다크 백드롭 (콘텐츠는 그대로 흰 카드 유지) */
+#project.page {
+    --section-backdrop:
+        radial-gradient(800px 420px at 22% 22%, rgba(56, 189, 248, 0.10), transparent 64%),
+        linear-gradient(180deg, #0b1220 0%, #0b1220 100%),
+        repeating-linear-gradient(
+            to bottom,
+            rgba(226, 232, 240, 0.10) 0px,
+            rgba(226, 232, 240, 0.10) 1px,
+            transparent 1px,
+            transparent 76px
+        );
+}
+
+#github.page {
+    /* 데이터 엔지니어 느낌: WORK과 유사하되 조금 더 차분하게 */
+    --section-backdrop:
+        radial-gradient(900px 520px at 70% 22%, rgba(56, 189, 248, 0.10), transparent 64%),
+        radial-gradient(760px 460px at 22% 64%, rgba(29, 78, 216, 0.08), transparent 66%),
+        linear-gradient(#0f172a, #0f172a),
+        linear-gradient(rgba(14, 165, 233, 0.055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(14, 165, 233, 0.055) 1px, transparent 1px);
+    --section-backdrop-size: auto, auto, auto, 28px 28px, 28px 28px;
+}
+
+#work.page::before,
+#github.page::before {
+    border-top-color: rgba(226, 232, 240, 0.10);
+    border-bottom-color: rgba(226, 232, 240, 0.10);
+}
+
+/* 프로젝트 hover 이미지 미리보기 */
+.project-has-image {
+    cursor: pointer;
+}
+
+.project-hover-preview {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: min(420px, 70vw);
+    aspect-ratio: 16 / 10;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(226, 232, 240, 0.16);
+    background: rgba(2, 6, 23, 0.65);
+    box-shadow: 0 24px 70px rgba(2, 6, 23, 0.45);
+    pointer-events: none;
+    z-index: 2000;
+    transform: translateZ(0);
+}
+
+.project-hover-preview.hidden {
+    display: none;
+}
+
+.project-hover-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+#contact.page {
+    --section-backdrop:
+        radial-gradient(900px 520px at 30% 70%, rgba(14, 165, 233, 0.10), transparent 64%),
+        linear-gradient(#ffffff, #ffffff);
+}
+
+/* ABOUT는 화면 내에서 더 안정적으로 보이도록 세로 정렬 */
+#about.page {
+    padding-top: 36px;
+    padding-bottom: 36px;
+    display: flex;
+    align-items: center;
+}
+
+#about.page .hero {
+    width: 100%;
 }
 
 /* ===== 메인화면 (프로필) ===== */
-.profile-hero {
-    background: var(--bg-card);
-    border-radius: 12px;
-    padding: 48px;
+.hero {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 24px;
+    align-items: start;
+}
+
+.hero-copy {
+    padding: 22px 6px;
+}
+
+.hero-kicker {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.18em;
+    font-weight: 700;
+}
+
+.hero-title {
+    margin-top: 14px;
+    font-size: clamp(40px, 4.6vw, 64px);
+    line-height: 1.06;
+    letter-spacing: -0.04em;
+    font-weight: 800;
+}
+
+.hero-title-sub {
+    display: inline-block;
+    margin-left: 10px;
+    font-size: 0.42em;
+    letter-spacing: 0.18em;
+    font-weight: 750;
+    color: var(--text-muted);
+    vertical-align: top;
+}
+
+.hero-lede {
+    margin-top: 18px;
+    max-width: 56ch;
+    line-height: 1.8;
+    color: var(--text-muted);
+}
+
+.hero-cta {
+    margin-top: 22px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 14px;
+    border-radius: 10px;
     border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.7);
+    box-shadow: var(--shadow-soft);
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 650;
+    font-size: 14px;
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    background: var(--bg-card);
+}
+
+.btn.primary {
+    border-color: rgba(29, 78, 216, 0.25);
+    background: rgba(29, 78, 216, 0.10);
+}
+
+.profile-hero {
+    background: rgba(255, 255, 255, 0.74);
+    border-radius: 16px;
+    padding: 22px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
 }
 
 .profile-hero h1 {
@@ -166,16 +398,16 @@ body::before {
 .profile-info {
     display: flex;
     gap: 32px;
-    margin: 32px 0;
+    margin: 6px 0 18px;
     align-items: flex-start;
 }
 
 .profile-photo-wrap {
     position: relative;
-    width: 160px;
-    height: 200px;
-    border: 2px dashed var(--border);
-    border-radius: 8px;
+    width: 144px;
+    height: 180px;
+    border: 1px dashed rgba(15, 23, 42, 0.20);
+    border-radius: 14px;
     overflow: hidden;
     flex-shrink: 0;
     background: var(--bg-elevated);
@@ -205,7 +437,7 @@ body::before {
 .info-row { margin-bottom: 12px; font-size: 1rem; }
 .info-row strong {
     display: inline-block;
-    width: 90px;
+    width: 78px;
     color: var(--text-muted);
 }
 
@@ -218,18 +450,19 @@ body::before {
 .intro-section h3 {
     font-size: 1.1rem;
     margin-bottom: 12px;
-    color: var(--accent);
+    color: var(--text);
     font-weight: 600;
 }
 .intro-text { line-height: 1.8; min-height: 80px; color: var(--text); }
 
 /* ===== 페이지 헤더 ===== */
 .page-header {
-    background: var(--bg-card);
-    border-radius: 12px 12px 0 0;
+    background: rgba(255, 255, 255, 0.78);
+    border-radius: 16px 16px 0 0;
     padding: 32px 40px 24px;
     border: 1px solid var(--border);
     border-bottom: none;
+    box-shadow: var(--shadow);
 }
 
 .page-header h2 {
@@ -247,16 +480,77 @@ body::before {
 .canvas-area {
     position: relative;
     min-height: 500px;
-    background: var(--bg-card);
+    background: rgba(255, 255, 255, 0.78);
     padding: 24px 40px 48px;
     border: 1px solid var(--border);
     border-top: none;
-    border-radius: 0 0 12px 12px;
+    border-radius: 0 0 16px 16px;
+    box-shadow: var(--shadow);
 }
 
 .dynamic-area.edit-zone {
     outline: 1px dashed var(--accent);
     outline-offset: -1px;
+}
+
+/* ===== CONTACT ===== */
+.contact-card {
+    min-height: auto;
+}
+
+.contact-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.contact-item {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.75);
+}
+
+.contact-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+    font-weight: 750;
+}
+
+.contact-value {
+    margin-top: 8px;
+    font-size: 15px;
+    color: var(--text);
+}
+
+.contact-link {
+    color: var(--text);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.22);
+}
+
+.contact-link:hover {
+    border-bottom-color: rgba(29, 78, 216, 0.45);
+}
+
+.contact-mono {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+@media (max-width: 860px) {
+    .hero {
+        grid-template-columns: 1fr;
+    }
+    .profile-info {
+        gap: 18px;
+    }
+    .contact-grid {
+        grid-template-columns: 1fr;
+    }
+    #about.page {
+        align-items: flex-start;
+    }
 }
 
 .dynamic-area.edit-zone::after {
@@ -628,10 +922,343 @@ body::before {
 .search-result-item:hover { background: var(--bg-elevated); border-color: var(--accent); }
 .search-result-item.highlight { background: rgba(14, 165, 233, 0.2); border-color: var(--accent); }
 
+/* ===== GitHub 페이지 ===== */
+.page-subtitle {
+    margin-top: -8px;
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.github-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px 16px;
+    margin-top: 16px;
+}
+
+.github-fixed-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.18);
+}
+
+.github-fixed-label {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.github-fixed-value {
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 700;
+}
+
+.github-label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.github-label input {
+    width: 260px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-elevated);
+    color: var(--text);
+    outline: none;
+}
+
+.github-label input:focus {
+    border-color: rgba(34, 211, 238, 0.5);
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.12);
+}
+
+.github-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.github-status {
+    flex: 1;
+    min-width: 220px;
+    font-size: 12px;
+    color: var(--text-muted);
+    padding-bottom: 6px;
+}
+
+.github-status[data-tone="success"] { color: #86efac; }
+.github-status[data-tone="error"] { color: #fca5a5; }
+.github-status[data-tone="warn"] { color: #fde68a; }
+.github-status[data-tone="muted"] { color: var(--text-muted); }
+
+.github-grid {
+    background: var(--bg-card);
+    padding: 24px 40px 48px;
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+}
+
+.github-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.github-card-header {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.github-card-header h3 {
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 600;
+}
+
+.github-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.github-card-body {
+    padding: 16px;
+}
+
+.github-placeholder {
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.github-error strong {
+    display: block;
+    color: #fca5a5;
+    margin-bottom: 6px;
+}
+
+.github-error p {
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.github-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 12px;
+}
+
+.github-link:hover { text-decoration: underline; }
+
+.github-profile {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    gap: 14px;
+    align-items: start;
+}
+
+.github-avatar-wrap {
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: rgba(15, 23, 42, 0.25);
+}
+
+.github-avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.github-profile-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.github-profile-name {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text);
+}
+
+.github-profile-login {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.github-profile-bio {
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.7;
+    margin: 8px 0 6px;
+}
+
+.github-profile-meta {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.github-profile-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    margin-top: 10px;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.github-profile-stats strong {
+    color: var(--text);
+    font-weight: 700;
+}
+
+.github-repo-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+.github-repo {
+    display: block;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    background: rgba(15, 23, 42, 0.22);
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+
+.github-repo:hover {
+    transform: translateY(-1px);
+    border-color: rgba(34, 211, 238, 0.35);
+    background: rgba(15, 23, 42, 0.32);
+}
+
+.github-repo-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.github-repo-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.github-repo-badges {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.github-badge {
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: var(--text-muted);
+    background: rgba(30, 41, 59, 0.5);
+    white-space: nowrap;
+}
+
+.github-repo-desc {
+    margin-top: 8px;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.github-repo-meta {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.github-activity {
+    list-style: none;
+    display: grid;
+    gap: 8px;
+}
+
+.github-activity-item {
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    background: rgba(15, 23, 42, 0.22);
+}
+
+.github-activity-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    text-decoration: none;
+    color: inherit;
+}
+
+.github-activity-link:hover {
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.32);
+}
+
+.github-activity-summary {
+    font-size: 12px;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.github-activity-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.page.github-loading .github-card {
+    opacity: 0.95;
+}
+
 /* ===== 반응형 ===== */
 @media (max-width: 768px) {
     .profile-hero, .page-header { padding: 24px; }
     .profile-info { flex-direction: column; }
     .profile-photo-wrap { width: 120px; height: 150px; }
     .canvas-area { padding: 16px; }
+    .github-grid { padding: 16px; }
+    .github-label input { width: 100%; }
 }
