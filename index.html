@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portfolio</title>
+    <title>김정희 포트폴리오</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,7 +11,6 @@
     <div class="edit-mode-bar">
         <button id="editModeToggle" class="edit-btn">편집모드</button>
         <button id="exportPublishBtn" class="edit-btn" type="button">배포 파일 생성</button>
-        <button id="githubSyncBtn" class="edit-btn" type="button">GitHub 동기화</button>
         <span class="edit-status">편집 불가</span>
     </div>
 
@@ -19,6 +18,9 @@
     <nav class="main-nav" aria-label="섹션 이동">
         <div class="nav-inner">
             <a class="nav-brand" href="#about">Web Portfolio</a>
+            <button id="mobileNavToggle" class="nav-toggle" type="button" aria-label="메뉴 열기" aria-controls="mobileNavDrawer" aria-expanded="false">
+                <span class="nav-toggle-icon" aria-hidden="true">☰</span>
+            </button>
             <div class="nav-links">
                 <a href="#about" class="nav-link active">ABOUT ME</a>
                 <a href="#work" class="nav-link">WORK</a>
@@ -29,6 +31,23 @@
             </div>
         </div>
     </nav>
+
+    <!-- 모바일 오프캔버스 네비게이션 -->
+    <div id="mobileNavOverlay" class="mobile-nav-overlay" hidden></div>
+    <aside id="mobileNavDrawer" class="mobile-nav-drawer" aria-label="모바일 메뉴" aria-hidden="true">
+        <div class="mobile-nav-header">
+            <div class="mobile-nav-title">Menu</div>
+            <button id="mobileNavClose" class="mobile-nav-close" type="button" aria-label="메뉴 닫기">×</button>
+        </div>
+        <div class="mobile-nav-links" role="navigation" aria-label="섹션 이동">
+            <a href="#about" class="nav-link active">ABOUT ME</a>
+            <a href="#work" class="nav-link">WORK</a>
+            <a href="#skills" class="nav-link">SKILLS</a>
+            <a href="#project" class="nav-link">PROJECT</a>
+            <a href="#github" class="nav-link">GITHUB</a>
+            <a href="#contact" class="nav-link">CONTACT</a>
+        </div>
+    </aside>
 
     <main class="app-main">
         <!-- ABOUT -->
@@ -237,40 +256,7 @@
         </div>
     </div>
 
-    <!-- GitHub 동기화 모달 -->
-    <div id="githubSyncModal" class="modal hidden">
-        <div class="modal-content">
-            <h3>GitHub 동기화</h3>
-
-            <label>Owner
-                <input type="text" id="ghOwner" placeholder="예: username">
-            </label>
-            <label>Repo
-                <input type="text" id="ghRepo" placeholder="예: portfolio">
-            </label>
-            <label>Branch
-                <input type="text" id="ghBranch" placeholder="main">
-            </label>
-            <label>파일 경로
-                <input type="text" id="ghFilePath" placeholder="published_data.js">
-            </label>
-
-            <label>GitHub Token (PAT)
-                <input type="password" id="ghTokenActions" placeholder="Actions(workflow) 호출 권한 토큰">
-            </label>
-            <label>편집 비밀번호 (선택)
-                <input type="password" id="ghPasswordActions" placeholder="Actions Secret과 비교(설정 시)">
-            </label>
-            <p class="page-subtitle">주의: 데이터가 큰 경우(특히 이미지 DataURL 포함) Actions 입력 제한 때문에 실패할 수 있습니다.</p>
-
-            <button id="ghSyncExecute" class="modal-btn">동기화 실행</button>
-            <button id="ghSyncClose" class="modal-btn secondary">닫기</button>
-            <div id="ghSyncStatus" class="github-status" aria-live="polite"></div>
-        </div>
-    </div>
-
     <script src="published_data.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
-

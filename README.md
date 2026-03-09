@@ -44,23 +44,11 @@
   - 없으면 `localStorage`에 저장된 데이터로 로드
 
 ### 6. 배포 파일 생성 (`published_data.js`)
-- 편집 세션(`?edit=1`)에서 상단의 **배포 파일 생성** 버튼을 누르면 `published_data.js`가 다운로드됩니다.
-- 생성된 `published_data.js`를 `index.html`과 **같은 폴더**에 두면, 일반 방문 모드에서 해당 데이터가 자동으로 반영됩니다.
-
-### 7. GitHub 동기화(저장하면 랜딩 반영)
-편집 세션 상단의 **GitHub 동기화** 버튼으로 `published_data.js`를 GitHub 저장소에 커밋할 수 있습니다. GitHub Pages를 랜딩으로 쓰는 경우, 커밋 후 자동 배포되어 일반 방문 모드에 반영됩니다(반영까지 수십 초~수분 지연 가능).
-
-#### GitHub Actions 방식 설정 (workflow_dispatch)
-1. 이 레포에 워크플로가 포함되어 있습니다: `.github/workflows/portfolio_publish.yml`
-2. (선택) Actions Secret 설정 (레포 Settings → Secrets and variables → Actions → New repository secret)
-   - `PORTFOLIO_PUBLISH_PASSWORD_SHA256`: 편집 비밀번호의 SHA-256(hex)
-3. 편집 세션에서 **GitHub Token(PAT)**을 입력하고 동기화 실행
-   - 토큰은 workflow 호출 권한이 필요합니다(예: classic PAT의 `workflow` 등)
-4. 데이터가 큰 경우(특히 이미지 DataURL 포함) Actions 입력 제한으로 실패할 수 있습니다.
-   - 이 경우 `배포 파일 생성`으로 `published_data.js`를 받은 뒤 수동 커밋을 권장합니다.
+- 편집 세션(`?edit=1`)에서 상단의 **배포 파일 생성** 버튼을 누르면 `published_data.js`를 생성합니다.
+  - Chrome/Edge에서는 저장 대화상자에서 `index.html`이 있는 폴더의 `published_data.js`를 **선택해 덮어쓰기 저장**할 수 있습니다.
+  - 지원되지 않는 브라우저에서는 `published_data.js`가 **다운로드**됩니다. 이 파일을 `index.html`과 **같은 폴더**에 덮어쓰면 일반 방문 모드에 반영됩니다.
 
 ## 파일 구조
 - `index.html` - 메인 페이지
 - `styles.css` - 스타일
 - `app.js` - 편집/드래그/저장 로직
-- `.github/workflows/portfolio_publish.yml` - Actions로 커밋(옵션)

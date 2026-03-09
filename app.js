@@ -8,7 +8,223 @@ let lastRightClick = { x: 0, y: 0, pageId: null, canvas: null };
 const STORAGE_KEY = 'portfolio_canvas_data';
 const GRID_SNAP = 8; // 배치 보정용 그리드 간격 (px)
 const PUBLISHED_DATA_GLOBAL = '__PUBLISHED_PORTFOLIO_DATA__';
-const PUBLISH_SETTINGS_KEY = 'portfolio_publish_settings_v1';
+const MOBILE_BREAKPOINT_PX = 640;
+let desktopBoundsFixRaf = 0;
+const COLLISION_GAP_PX = 5;
+
+function isMobileViewport() {
+    return window.matchMedia && window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT_PX}px)`).matches;
+}
+
+function clampNumber(n, min, max) {
+    return Math.min(max, Math.max(min, n));
+}
+
+function rectsIntersect(a, b, gap = 0) {
+    return (
+        a.left < b.right + gap &&
+        a.right + gap > b.left &&
+        a.top < b.bottom + gap &&
+        a.bottom + gap > b.top
+    );
+}
+
+function getElementDesiredRect(el, canvasWidth) {
+    const rawW = el.offsetWidth || 0;
+    const rawH = el.offsetHeight || 0;
+
+    let w = rawW;
+    const h = rawH;
+
+    // 표는 캔버스 폭을 넘기기 쉬워서 폭 제한
+    if (el.classList.contains('table-wrapper') && w > canvasWidth) {
+        el.style.maxWidth = `${canvasWidth}px`;
+        w = canvasWidth;
+    } else if (el.style.maxWidth) {
+        el.style.maxWidth = '';
+    }
+
+    let left = parseFloat(el.style.left);
+    let top = parseFloat(el.style.top);
+    if (!Number.isFinite(left)) left = 0;
+    if (!Number.isFinite(top)) top = 0;
+
+    left = Math.max(0, left);
+    top = Math.max(0, top);
+
+    const maxLeft = Math.max(0, canvasWidth - w);
+    left = clampNumber(left, 0, maxLeft);
+
+    // snap 유지(드래그/생성은 이미 스냅하지만 리사이즈 보정 시에도 정돈)
+    left = snapToGrid(left);
+    top = snapToGrid(top);
+
+    return {
+        left,
+        top,
+        w,
+        h,
+        right: left + w,
+        bottom: top + h
+    };
+}
+
+function findNearestFreeSpot({ baseLeft, baseTop, w, h, canvasWidth, placedRects }) {
+    const step = GRID_SNAP;
+    const maxLeft = Math.max(0, canvasWidth - w);
+
+    const maxBottom = placedRects.reduce((m, r) => Math.max(m, r.bottom), 0);
+    const searchMaxTop = Math.max(baseTop + 1200, maxBottom + 1200, 1600);
+
+    const ok = (left, top) => {
+        if (left < 0 || left > maxLeft) return false;
+        if (top < 0 || top > searchMaxTop) return false;
+        const r = { left, top, right: left + w, bottom: top + h };
+        return !placedRects.some(p => rectsIntersect(r, p, COLLISION_GAP_PX));
+    };
+
+    const startL = clampNumber(snapToGrid(baseLeft), 0, maxLeft);
+    const startT = Math.max(0, snapToGrid(baseTop));
+    if (ok(startL, startT)) return { left: startL, top: startT };
+
+    // 주변 빈공간 탐색: 사각 링을 확장하면서 가장 가까운 후보를 찾음
+    const maxR = Math.max(12, Math.ceil(canvasWidth / step));
+    for (let r = 1; r <= maxR; r++) {
+        const d = r * step;
+
+        // 상/하 변
+        for (let dx = -r; dx <= r; dx++) {
+            const x = startL + dx * step;
+            const yt = startT - d;
+            const yb = startT + d;
+            if (ok(x, yt)) return { left: clampNumber(x, 0, maxLeft), top: Math.max(0, yt) };
+            if (ok(x, yb)) return { left: clampNumber(x, 0, maxLeft), top: Math.max(0, yb) };
+        }
+        // 좌/우 변
+        for (let dy = -r + 1; dy <= r - 1; dy++) {
+            const y = startT + dy * step;
+            const xl = startL - d;
+            const xr = startL + d;
+            if (ok(xl, y)) return { left: clampNumber(xl, 0, maxLeft), top: Math.max(0, y) };
+            if (ok(xr, y)) return { left: clampNumber(xr, 0, maxLeft), top: Math.max(0, y) };
+        }
+    }
+
+    // 그래도 못 찾으면 맨 아래로 내리기(겹침 방지 최후 수단)
+    return { left: startL, top: snapToGrid(maxBottom + COLLISION_GAP_PX) };
+}
+
+function layoutCanvasNoOverlap(canvas) {
+    if (!canvas) return;
+
+    const cw = canvas.clientWidth || 0;
+    if (!cw) return;
+
+    const items = Array.from(canvas.querySelectorAll('.draggable-item'));
+    if (!items.length) return;
+
+    // 현재 좌표 기준으로 위→아래, 왼→오른쪽 순으로 배치(기존 의도를 최대한 유지)
+    items.sort((a, b) => {
+        const at = parseFloat(a.style.top) || 0;
+        const bt = parseFloat(b.style.top) || 0;
+        if (at !== bt) return at - bt;
+        const al = parseFloat(a.style.left) || 0;
+        const bl = parseFloat(b.style.left) || 0;
+        if (al !== bl) return al - bl;
+        return String(a.dataset.id || '').localeCompare(String(b.dataset.id || ''));
+    });
+
+    const placed = [];
+    items.forEach(el => {
+        const desired = getElementDesiredRect(el, cw);
+        const spot = findNearestFreeSpot({
+            baseLeft: desired.left,
+            baseTop: desired.top,
+            w: desired.w,
+            h: desired.h,
+            canvasWidth: cw,
+            placedRects: placed
+        });
+
+        el.style.left = `${spot.left}px`;
+        el.style.top = `${spot.top}px`;
+
+        placed.push({ left: spot.left, top: spot.top, right: spot.left + desired.w, bottom: spot.top + desired.h });
+    });
+
+    ensureCanvasHeight(canvas);
+}
+
+function moveElementToNearestFreeSpot(canvas, el) {
+    if (!canvas || !el) return;
+    const cw = canvas.clientWidth || 0;
+    if (!cw) return;
+
+    const desired = getElementDesiredRect(el, cw);
+    const others = Array.from(canvas.querySelectorAll('.draggable-item')).filter(x => x !== el);
+    const placed = others.map(o => getElementDesiredRect(o, cw));
+
+    const spot = findNearestFreeSpot({
+        baseLeft: desired.left,
+        baseTop: desired.top,
+        w: desired.w,
+        h: desired.h,
+        canvasWidth: cw,
+        placedRects: placed
+    });
+
+    el.style.left = `${spot.left}px`;
+    el.style.top = `${spot.top}px`;
+    ensureCanvasHeight(canvas);
+}
+
+function scheduleDesktopBoundsFix() {
+    if (desktopBoundsFixRaf) cancelAnimationFrame(desktopBoundsFixRaf);
+    desktopBoundsFixRaf = requestAnimationFrame(() => {
+        desktopBoundsFixRaf = 0;
+        if (isMobileViewport()) return;
+        document.querySelectorAll('.canvas-area').forEach(layoutCanvasNoOverlap);
+    });
+}
+
+function applyMobileViewState() {
+    const isMobile = isMobileViewport();
+    document.body.classList.toggle('mobile-view', isMobile);
+
+    if (!isMobile) {
+        // 데스크톱/태블릿 구간에서는 리사이즈로 아이템이 캔버스 밖으로 나가지 않도록 보정
+        scheduleDesktopBoundsFix();
+        return;
+    }
+
+    // 모바일에서는 편집/드래그 완전 비활성화
+    editMode = false;
+    document.body.classList.remove('edit-mode');
+    document.querySelectorAll('.dynamic-area').forEach(area => area.classList.remove('edit-zone'));
+    hideToolbox();
+    updateDeleteButtonsVisibility();
+
+    // 모바일에서는 절대좌표 의미가 없으니, 기존 좌표(top/left)를 기준으로 DOM 순서를 자동 정렬
+    document.querySelectorAll('.canvas-area').forEach(canvas => {
+        const items = Array.from(canvas.querySelectorAll('.draggable-item'));
+        if (!items.length) return;
+
+        items.sort((a, b) => {
+            const at = parseFloat(a.style.top) || 0;
+            const bt = parseFloat(b.style.top) || 0;
+            if (at !== bt) return at - bt;
+            const al = parseFloat(a.style.left) || 0;
+            const bl = parseFloat(b.style.left) || 0;
+            if (al !== bl) return al - bl;
+            const aid = String(a.dataset.id || '');
+            const bid = String(b.dataset.id || '');
+            return aid.localeCompare(bid);
+        });
+
+        items.forEach(el => canvas.appendChild(el));
+        canvas.style.minHeight = 'auto';
+    });
+}
 
 function isEditSession() {
     try {
@@ -57,20 +273,63 @@ document.addEventListener('DOMContentLoaded', () => {
     initProjectHoverPreview();
     // 배포 후에는 published_data.js의 고정 데이터를 먼저 로드
     // (편집 세션에서는 localStorage 기반으로 작업)
-    if (!isEditSession()) {
-        const loaded = loadPublishedData();
-        if (!loaded) loadSavedData();
+    const publishedLoaded = loadPublishedData();
+    if (isEditSession()) {
+        // 편집 세션은 "현재 배포된 상태"에서 시작해야 함.
+        // 배포 데이터가 있으면 그 상태를 localStorage에도 동기화해서 예전 작업본으로 되돌아가는 현상을 방지.
+        if (publishedLoaded) {
+            saveAllData();
+        } else {
+            loadSavedData();
+        }
     } else {
-        loadSavedData();
+        if (!publishedLoaded) loadSavedData();
     }
     updateDeleteButtonsVisibility();
     initGithubPage();
+
+    applyMobileViewState();
+    window.addEventListener('resize', () => applyMobileViewState());
 });
 
 // ===== 네비게이션 =====
 function initNavigation() {
     const links = Array.from(document.querySelectorAll('.nav-link'))
         .filter(a => (a.getAttribute('href') || '').startsWith('#'));
+
+    const mobileToggle = document.getElementById('mobileNavToggle');
+    const mobileClose = document.getElementById('mobileNavClose');
+    const mobileOverlay = document.getElementById('mobileNavOverlay');
+    const mobileDrawer = document.getElementById('mobileNavDrawer');
+
+    const openMobileNav = () => {
+        if (!isMobileViewport()) return;
+        document.body.classList.add('mobile-nav-open');
+        if (mobileOverlay) mobileOverlay.hidden = false;
+        if (mobileDrawer) mobileDrawer.setAttribute('aria-hidden', 'false');
+        if (mobileToggle) mobileToggle.setAttribute('aria-expanded', 'true');
+    };
+
+    const closeMobileNav = () => {
+        document.body.classList.remove('mobile-nav-open');
+        if (mobileOverlay) mobileOverlay.hidden = true;
+        if (mobileDrawer) mobileDrawer.setAttribute('aria-hidden', 'true');
+        if (mobileToggle) mobileToggle.setAttribute('aria-expanded', 'false');
+    };
+
+    // 초기 상태
+    closeMobileNav();
+
+    mobileToggle?.addEventListener('click', () => {
+        if (!isMobileViewport()) return;
+        if (document.body.classList.contains('mobile-nav-open')) closeMobileNav();
+        else openMobileNav();
+    });
+    mobileClose?.addEventListener('click', () => closeMobileNav());
+    mobileOverlay?.addEventListener('click', () => closeMobileNav());
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeMobileNav();
+    });
 
     const getHeaderOffset = () => {
         const editBar = document.querySelector('.edit-mode-bar');
@@ -100,6 +359,7 @@ function initNavigation() {
             const target = document.getElementById(id);
             if (!target) return;
             e.preventDefault();
+            closeMobileNav();
             scrollToSection(target, 'smooth');
             history.replaceState(null, '', `#${id}`);
             setActive(id);
@@ -126,6 +386,7 @@ function initNavigation() {
         sections.forEach(s => observer.observe(s));
 
         window.addEventListener('resize', () => {
+            if (!isMobileViewport()) closeMobileNav();
             observer.disconnect();
             sections.forEach(s => observer.observe(s));
         });
@@ -152,6 +413,14 @@ function initEditMode() {
 
     // 배포/일반 방문에서는 편집 UI 숨김 (URL에 ?edit=1이면 표시)
     if (!isEditSession()) {
+        if (bar) bar.style.display = 'none';
+        editMode = false;
+        updateDeleteButtonsVisibility();
+        return;
+    }
+
+    // 모바일에서는 편집 UI 자체를 막음 (?edit=1이어도)
+    if (isMobileViewport()) {
         if (bar) bar.style.display = 'none';
         editMode = false;
         updateDeleteButtonsVisibility();
@@ -188,6 +457,7 @@ function updateDeleteButtonsVisibility() {
 // ===== 툴박스 - 편집모드에서 캔버스 영역 우클릭 시 =====
 function initToolbox() {
     document.addEventListener('contextmenu', (e) => {
+        if (isMobileViewport()) return;
         if (!editMode) return;
 
         const canvas = e.target.closest('.canvas-area');
@@ -277,6 +547,7 @@ function getCanvasPosition(canvas, clientX, clientY) {
 // ===== 드래그 =====
 function initDrag() {
     document.addEventListener('mousedown', (e) => {
+        if (isMobileViewport()) return;
         if (!editMode) return;
         const item = e.target.closest('.draggable-item');
         if (!item) return;
@@ -307,7 +578,8 @@ function initDrag() {
             item.classList.remove('dragging');
             document.removeEventListener('mousemove', onMove);
             document.removeEventListener('mouseup', onUp);
-            ensureCanvasHeight(canvas);
+            // 드래그 드랍 후에도 겹치면 주변 빈공간으로 이동
+            moveElementToNearestFreeSpot(canvas, item);
         };
 
         document.addEventListener('mousemove', onMove);
@@ -559,14 +831,45 @@ function addDynamicItem(type, values, { imageSrc = '' } = {}) {
     item.style.left = pos.left + 'px';
     item.style.top = pos.top + 'px';
 
-    let html = '<div class="item-content">';
-    Object.entries(values).forEach(([key, val]) => {
-        if (val) html += `<span><strong>${config.fields.find(f => f.name === key)?.label}:</strong> ${escapeHtml(val)}</span><br>`;
-    });
-    html += '</div><button class="item-delete" aria-label="삭제">×</button>';
-    item.innerHTML = html;
+    if (type === 'project') {
+        const wrap = document.createElement('div');
+        wrap.className = 'project-thumb-wrap';
+        if (imageSrc) {
+            const img = document.createElement('img');
+            img.className = 'project-thumb';
+            img.src = imageSrc;
+            img.alt = '';
+            img.loading = 'lazy';
+            img.draggable = false;
+            wrap.appendChild(img);
+        } else {
+            const ph = document.createElement('div');
+            ph.className = 'project-thumb-placeholder';
+            ph.textContent = 'No Image';
+            wrap.appendChild(ph);
+        }
+        item.appendChild(wrap);
+    }
 
-    item.querySelector('.item-delete')?.addEventListener('click', () => item.remove());
+    const contentEl = document.createElement('div');
+    contentEl.className = 'item-content';
+    config.fields.forEach(f => {
+        const val = String(values?.[f.name] || '').trim();
+        if (!val) return;
+        const fieldEl = document.createElement('div');
+        fieldEl.className = 'item-field';
+        fieldEl.dataset.field = f.name;
+        fieldEl.innerHTML = `<strong>${escapeHtml(f.label)}:</strong> ${escapeHtml(val)}`;
+        contentEl.appendChild(fieldEl);
+    });
+    item.appendChild(contentEl);
+
+    const del = document.createElement('button');
+    del.className = 'item-delete';
+    del.setAttribute('aria-label', '삭제');
+    del.textContent = '×';
+    del.addEventListener('click', () => item.remove());
+    item.appendChild(del);
 
     if (type === 'project' && imageSrc) {
         item.dataset.imageSrc = imageSrc;
@@ -641,14 +944,6 @@ function initModals() {
         if (!isEditSession()) return;
         exportPublishedDataJs();
     });
-
-    // GitHub 동기화 모달
-    document.getElementById('githubSyncBtn')?.addEventListener('click', () => {
-        if (!isEditSession()) return;
-        openGithubSyncModal();
-    });
-    document.getElementById('ghSyncClose')?.addEventListener('click', () => closeGithubSyncModal());
-    document.getElementById('ghSyncExecute')?.addEventListener('click', () => executeGithubSync());
 }
 
 function downloadText(filename, text) {
@@ -663,163 +958,44 @@ function downloadText(filename, text) {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function exportPublishedDataJs() {
-    const data = collectAllData();
-    const js = `// AUTO-GENERATED: 배포용 고정 데이터\nwindow.${PUBLISHED_DATA_GLOBAL} = ${JSON.stringify(data)};\n`;
-    downloadText('published_data.js', js);
-}
-
 function buildPublishedDataJsText() {
     const data = collectAllData();
     return `// AUTO-GENERATED: 배포용 고정 데이터\nwindow.${PUBLISHED_DATA_GLOBAL} = ${JSON.stringify(data)};\n`;
 }
 
-function readPublishSettings() {
-    try {
-        const raw = localStorage.getItem(PUBLISH_SETTINGS_KEY);
-        if (!raw) return null;
-        return JSON.parse(raw);
-    } catch {
-        return null;
-    }
-}
-
-function writePublishSettings(settings) {
-    try {
-        localStorage.setItem(PUBLISH_SETTINGS_KEY, JSON.stringify(settings || {}));
-    } catch {
-        // ignore
-    }
-}
-
-function setGithubSyncStatus(message, tone = 'info') {
-    const el = document.getElementById('ghSyncStatus');
+function setEditBarStatus(message, tone = 'muted') {
+    const el = document.querySelector('.edit-status');
     if (!el) return;
     el.textContent = message || '';
     el.dataset.tone = tone;
 }
 
-function openGithubSyncModal() {
-    const modal = document.getElementById('githubSyncModal');
-    if (!modal) return;
+async function exportPublishedDataJs() {
+    const js = buildPublishedDataJsText();
 
-    const saved = readPublishSettings() || {};
-
-    const ownerEl = document.getElementById('ghOwner');
-    const repoEl = document.getElementById('ghRepo');
-    const branchEl = document.getElementById('ghBranch');
-    const pathEl = document.getElementById('ghFilePath');
-
-    if (ownerEl) ownerEl.value = saved.owner || '';
-    if (repoEl) repoEl.value = saved.repo || '';
-    if (branchEl) branchEl.value = saved.branch || 'main';
-    if (pathEl) pathEl.value = saved.filePath || 'published_data.js';
-
-    setGithubSyncStatus('', 'muted');
-    modal.classList.remove('hidden');
-}
-
-function closeGithubSyncModal() {
-    document.getElementById('githubSyncModal')?.classList.add('hidden');
-}
-
-function encodePathSegments(path) {
-    return String(path || '')
-        .split('/')
-        .filter(Boolean)
-        .map(s => encodeURIComponent(s))
-        .join('/');
-}
-
-function toBase64Utf8(text) {
-    const bytes = new TextEncoder().encode(String(text || ''));
-    let binary = '';
-    const chunk = 0x8000;
-    for (let i = 0; i < bytes.length; i += chunk) {
-        binary += String.fromCharCode(...bytes.slice(i, i + chunk));
-    }
-    return btoa(binary);
-}
-
-async function fetchGithubApiJson(url, { token, method = 'GET', body } = {}) {
-    const headers = {
-        'Accept': 'application/vnd.github+json'
-    };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    const res = await fetch(url, {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : undefined
-    });
-
-    if (!res.ok) {
-        let detail = '';
+    // 가능하면 "파일로 저장"으로 덮어쓰기(Chrome/Edge의 File System Access API)
+    // 보안상 페이지가 임의로 같은 폴더에 쓰기는 불가하므로, 저장 대화상자에서 published_data.js를 선택/덮어쓰기합니다.
+    if (window.showSaveFilePicker) {
         try {
-            const j = await res.json();
-            detail = j?.message ? ` · ${j.message}` : '';
-        } catch {
-            // ignore
+            const handle = await window.showSaveFilePicker({
+                suggestedName: 'published_data.js',
+                types: [{
+                    description: 'JavaScript',
+                    accept: { 'text/javascript': ['.js'] }
+                }]
+            });
+            const writable = await handle.createWritable();
+            await writable.write(js);
+            await writable.close();
+            setEditBarStatus('배포 파일 저장 완료 (published_data.js 덮어쓰기)', 'success');
+            return;
+        } catch (e) {
+            // 사용자가 취소했거나 권한/지원 이슈면 다운로드로 fallback
         }
-        throw new Error(`GitHub API 요청 실패 (${res.status})${detail}`);
     }
 
-    if (res.status === 204) return null;
-    return await res.json();
-}
-
-async function githubDispatchPublishWorkflow({ owner, repo, branch, filePath, token, contentText, password, message }) {
-    const workflowFile = 'portfolio_publish.yml';
-    const dispatchUrl = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/actions/workflows/${encodeURIComponent(workflowFile)}/dispatches`;
-
-    const contentB64 = toBase64Utf8(contentText);
-    // workflow_dispatch inputs는 길이 제한이 있어 큰 데이터(특히 이미지 DataURL)는 실패할 수 있음
-    if (contentB64.length > 8000) {
-        throw new Error('데이터가 커서 GitHub Actions 방식으로는 전송이 어렵습니다. (이미지 DataURL을 줄이거나, 배포 파일 생성 후 수동 커밋을 권장)');
-    }
-
-    await fetchGithubApiJson(dispatchUrl, {
-        token,
-        method: 'POST',
-        body: {
-            ref: branch,
-            inputs: {
-                file_path: String(filePath || 'published_data.js'),
-                content_b64: contentB64,
-                commit_message: String(message || `Update ${filePath || 'published_data.js'}`),
-                password: String(password || '')
-            }
-        }
-    });
-}
-
-async function executeGithubSync() {
-    const owner = (document.getElementById('ghOwner')?.value || '').trim();
-    const repo = (document.getElementById('ghRepo')?.value || '').trim();
-    const branch = (document.getElementById('ghBranch')?.value || 'main').trim() || 'main';
-    const filePath = (document.getElementById('ghFilePath')?.value || 'published_data.js').trim() || 'published_data.js';
-    const tokenActions = (document.getElementById('ghTokenActions')?.value || '').trim();
-    const passwordActions = (document.getElementById('ghPasswordActions')?.value || '').trim();
-
-    if (!owner || !repo) {
-        setGithubSyncStatus('owner/repo를 입력해주세요.', 'error');
-        return;
-    }
-
-    writePublishSettings({ owner, repo, branch, filePath });
-
-    const contentText = buildPublishedDataJsText();
-    const message = `Sync published_data.js @ ${new Date().toISOString()}`;
-
-    setGithubSyncStatus('동기화 중...', 'info');
-
-    try {
-        if (!tokenActions) throw new Error('Actions 방식은 workflow 호출 권한 토큰이 필요합니다.');
-        await githubDispatchPublishWorkflow({ owner, repo, branch, filePath, token: tokenActions, contentText, password: passwordActions, message });
-        setGithubSyncStatus('요청 완료: GitHub Actions가 커밋을 수행 중입니다. (Actions 탭에서 진행 상황 확인)', 'success');
-    } catch (e) {
-        setGithubSyncStatus(e?.message || '동기화 실패', 'error');
-    }
+    downloadText('published_data.js', js);
+    setEditBarStatus('배포 파일 다운로드 완료 (폴더에 덮어쓰기 저장하세요)', 'muted');
 }
 
 function readFileAsDataURL(file) {
@@ -928,8 +1104,16 @@ function collectAllData() {
         } else if (el.dataset.type === 'project') {
             const config = dynamicItemConfig[el.dataset.type];
             if (config) {
-                const content = el.querySelector('.item-content');
                 config.fields.forEach(f => {
+                    const fieldEl = el.querySelector(`.item-field[data-field="${CSS.escape(f.name)}"]`);
+                    if (fieldEl) {
+                        const prefix = `${f.label}:`;
+                        const raw = (fieldEl.textContent || '').trim();
+                        item[f.name] = raw.startsWith(prefix) ? raw.slice(prefix.length).trim() : raw.replace(prefix, '').trim();
+                        return;
+                    }
+                    // backward-compat fallback (old span/br structure)
+                    const content = el.querySelector('.item-content');
                     const spans = content?.querySelectorAll('span') || [];
                     const s = Array.from(spans).find(x => x.textContent.includes(f.label));
                     if (s) item[f.name] = s.textContent.replace(s.querySelector('strong')?.textContent || '', '').trim();
@@ -939,8 +1123,16 @@ function collectAllData() {
         } else {
             const config = dynamicItemConfig[el.dataset.type];
             if (config) {
-                const content = el.querySelector('.item-content');
                 config.fields.forEach(f => {
+                    const fieldEl = el.querySelector(`.item-field[data-field="${CSS.escape(f.name)}"]`);
+                    if (fieldEl) {
+                        const prefix = `${f.label}:`;
+                        const raw = (fieldEl.textContent || '').trim();
+                        item[f.name] = raw.startsWith(prefix) ? raw.slice(prefix.length).trim() : raw.replace(prefix, '').trim();
+                        return;
+                    }
+                    // backward-compat fallback
+                    const content = el.querySelector('.item-content');
                     const spans = content?.querySelectorAll('span') || [];
                     const s = Array.from(spans).find(x => x.textContent.includes(f.label));
                     if (s) item[f.name] = s.textContent.replace(s.querySelector('strong')?.textContent || '', '').trim();
@@ -1098,14 +1290,46 @@ function restoreItem(item) {
         el.style.left = (item.left || 0) + 'px';
         el.style.top = (item.top || 0) + 'px';
 
-        let html = '<div class="item-content">';
+        if (item.type === 'project') {
+            const wrap = document.createElement('div');
+            wrap.className = 'project-thumb-wrap';
+            const src = item.imageSrc || '';
+            if (src) {
+                const img = document.createElement('img');
+                img.className = 'project-thumb';
+                img.src = src;
+                img.alt = '';
+                img.loading = 'lazy';
+                img.draggable = false;
+                wrap.appendChild(img);
+            } else {
+                const ph = document.createElement('div');
+                ph.className = 'project-thumb-placeholder';
+                ph.textContent = 'No Image';
+                wrap.appendChild(ph);
+            }
+            el.appendChild(wrap);
+        }
+
+        const contentEl = document.createElement('div');
+        contentEl.className = 'item-content';
         config.fields.forEach(f => {
-            const val = values[f.name];
-            if (val) html += `<span><strong>${f.label}:</strong> ${escapeHtml(val)}</span><br>`;
+            const val = String(values[f.name] || '').trim();
+            if (!val) return;
+            const fieldEl = document.createElement('div');
+            fieldEl.className = 'item-field';
+            fieldEl.dataset.field = f.name;
+            fieldEl.innerHTML = `<strong>${escapeHtml(f.label)}:</strong> ${escapeHtml(val)}`;
+            contentEl.appendChild(fieldEl);
         });
-        html += '</div><button class="item-delete" aria-label="삭제">×</button>';
-        el.innerHTML = html;
-        el.querySelector('.item-delete')?.addEventListener('click', () => el.remove());
+        el.appendChild(contentEl);
+
+        const del = document.createElement('button');
+        del.className = 'item-delete';
+        del.setAttribute('aria-label', '삭제');
+        del.textContent = '×';
+        del.addEventListener('click', () => el.remove());
+        el.appendChild(del);
 
         if (item.type === 'project' && item.imageSrc) {
             el.dataset.imageSrc = item.imageSrc;

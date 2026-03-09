@@ -83,6 +83,21 @@ body.edit-session .edit-mode-bar {
     display: flex;
 }
 
+/* 모바일에서는 편집 UI/드래그 레이아웃 비활성 */
+body.mobile-view .edit-mode-bar {
+    display: none !important;
+}
+
+body.mobile-view .canvas-area {
+    min-height: auto;
+}
+
+body.mobile-view .canvas-area .draggable-item {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+}
+
 .edit-btn {
     padding: 6px 16px;
     background: var(--bg-card);
@@ -140,6 +155,111 @@ body.edit-session .edit-mode-bar {
     gap: 6px;
     flex-wrap: wrap;
     justify-content: flex-end;
+}
+
+.nav-toggle {
+    display: none;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.7);
+    box-shadow: var(--shadow-soft);
+    color: var(--text);
+    cursor: pointer;
+}
+
+.nav-toggle:hover { background: var(--bg-card); }
+.nav-toggle-icon { font-size: 18px; line-height: 1; }
+
+.mobile-nav-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 6, 23, 0.55);
+    z-index: 2500;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s ease;
+}
+
+.mobile-nav-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: min(86vw, 360px);
+    background: rgba(248, 250, 252, 0.92);
+    border-left: 1px solid var(--border);
+    z-index: 2600;
+    transform: translateX(102%);
+    transition: transform 0.22s ease;
+    padding: 14px 14px 18px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 24px 70px rgba(2, 6, 23, 0.35);
+}
+
+.mobile-nav-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 4px 12px;
+}
+
+.mobile-nav-title {
+    font-size: 13px;
+    font-weight: 750;
+    letter-spacing: 0.14em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.mobile-nav-close {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--text);
+}
+
+.mobile-nav-close:hover { background: var(--bg-card); }
+
+.mobile-nav-links {
+    display: grid;
+    gap: 6px;
+    padding-top: 6px;
+}
+
+.mobile-nav-links .nav-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 14px;
+    padding: 12px 14px;
+    border: 1px solid rgba(15, 23, 42, 0.10);
+    background: rgba(255, 255, 255, 0.65);
+}
+
+.mobile-nav-links .nav-link.active {
+    border-color: rgba(29, 78, 216, 0.28);
+    background: rgba(29, 78, 216, 0.10);
+}
+
+body.mobile-nav-open {
+    overflow: hidden;
+}
+
+body.mobile-nav-open .mobile-nav-overlay {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+body.mobile-nav-open .mobile-nav-drawer {
+    transform: translateX(0);
 }
 
 .nav-link {
@@ -653,6 +773,37 @@ body.edit-session .edit-mode-bar {
 }
 
 .dynamic-item .item-content { font-size: 14px; }
+.dynamic-item .item-field { display: block; }
+.dynamic-item .item-field strong { color: var(--text-muted); font-weight: 700; }
+
+.project-thumb-wrap {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    border-radius: 10px;
+    overflow: hidden;
+    background: rgba(2, 6, 23, 0.35);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    margin-bottom: 10px;
+}
+
+.project-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.project-thumb-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: rgba(226, 232, 240, 0.85);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
 .dynamic-item .item-delete {
     position: absolute;
     top: 4px;
@@ -1207,6 +1358,7 @@ body.edit-session .edit-mode-bar {
     font-size: 12px;
     line-height: 1.6;
     display: -webkit-box;
+    line-clamp: 2;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
@@ -1271,4 +1423,136 @@ body.edit-session .edit-mode-bar {
     .canvas-area { padding: 16px; }
     .github-grid { padding: 16px; }
     .github-label input { width: 100%; }
+
+    .nav-links { display: none; }
+    .nav-toggle { display: inline-flex; align-items: center; justify-content: center; }
+}
+
+@media (max-width: 640px) {
+    /* 섹션 배경 길이가 콘텐츠에 맞게 */
+    .page { min-height: auto; }
+
+    /* ABOUT: 모바일에서 더 보기 좋게 */
+    #about.page {
+        padding-top: 22px;
+        padding-bottom: 26px;
+        display: block;
+        align-items: initial;
+    }
+    /* ABOUT 배경이 카드보다 과하게 길지 않게(여유 15px 정도) */
+    #about.page::before {
+        top: -15px;
+        bottom: -30px;
+    }
+    #about.page .hero-copy { padding: 10px 2px; }
+    .hero-title { font-size: clamp(34px, 9vw, 46px); }
+    .hero-lede { margin-top: 12px; line-height: 1.75; }
+    .profile-hero { padding: 14px; margin-bottom: 10px; }
+
+    /* WORK: 논문(동적 아이템) 1열 리스트 */
+    #canvas-career {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+        min-height: auto;
+    }
+    #canvas-career .draggable-item {
+        position: relative !important;
+        left: auto !important;
+        top: auto !important;
+        width: 100%;
+        max-width: none;
+    }
+
+    /* SKILLS: 자격증/프로그램은 4열 카드, 이름만 표시 */
+    #canvas-skills {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        min-height: auto;
+    }
+    #canvas-skills .draggable-item {
+        position: relative !important;
+        left: auto !important;
+        top: auto !important;
+    }
+    /* skills 안의 다른 요소(표/포스트잇 등)는 전체 폭 */
+    #canvas-skills .draggable-item:not(.dynamic-item) { grid-column: 1 / -1; }
+    #canvas-skills .content-box { grid-column: 1 / -1; max-width: none; }
+    #canvas-skills .dynamic-item[data-type="certification"],
+    #canvas-skills .dynamic-item[data-type="program"] {
+        min-width: 0;
+        max-width: none;
+        border-radius: 14px;
+        padding: 12px;
+        text-align: center;
+    }
+    #canvas-skills .dynamic-item[data-type="certification"] .item-field:not([data-field="name"]),
+    #canvas-skills .dynamic-item[data-type="program"] .item-field:not([data-field="name"]) {
+        display: none;
+    }
+    #canvas-skills .dynamic-item[data-type="certification"] .item-field[data-field="name"] strong,
+    #canvas-skills .dynamic-item[data-type="program"] .item-field[data-field="name"] strong {
+        display: none;
+    }
+    #canvas-skills .dynamic-item[data-type="certification"] .item-content,
+    #canvas-skills .dynamic-item[data-type="program"] .item-content {
+        font-size: 13px;
+        color: var(--text);
+    }
+
+    /* PROJECT: 2열, 둥근 정사각형(이미지 전제) */
+    #canvas-portfolio {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        min-height: auto;
+    }
+    #canvas-portfolio .draggable-item {
+        position: relative !important;
+        left: auto !important;
+        top: auto !important;
+    }
+    #canvas-portfolio .draggable-item:not(.dynamic-item[data-type="project"]) { grid-column: 1 / -1; }
+    #canvas-portfolio .dynamic-item[data-type="project"] {
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+        border-radius: 18px;
+        padding: 10px;
+        overflow: hidden;
+        aspect-ratio: 1 / 1;
+        background: rgba(255, 255, 255, 0.78);
+    }
+    #canvas-portfolio .dynamic-item[data-type="project"] .project-thumb-wrap {
+        margin: 0;
+        border-radius: 14px;
+        aspect-ratio: 1 / 1;
+    }
+    /* 모바일에서는 프로젝트명만 깔끔하게 */
+    #canvas-portfolio .dynamic-item[data-type="project"] .item-field:not([data-field="name"]) { display: none; }
+    #canvas-portfolio .dynamic-item[data-type="project"] .item-field[data-field="name"] {
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: rgba(2, 6, 23, 0.55);
+        color: #fff;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(226, 232, 240, 0.14);
+    }
+    #canvas-portfolio .dynamic-item[data-type="project"] .item-field[data-field="name"] strong { display: none; }
+
+    /* GITHUB: 더 컴팩트하게 */
+    .github-grid { padding: 12px; gap: 10px; }
+    .github-card-header { padding: 12px 12px; }
+    .github-card-body { padding: 12px; }
+    .github-avatar-wrap { width: 52px; height: 52px; border-radius: 12px; }
+    .github-profile-name { font-size: 14px; }
+    .github-profile-bio { font-size: 12px; }
+
+    /* CONTACT: 1열(이미 860에서 적용되지만 확실히) */
+    .contact-grid { grid-template-columns: 1fr; }
 }
